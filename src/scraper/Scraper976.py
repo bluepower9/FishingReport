@@ -11,10 +11,45 @@ import inflect
 
 
 class Scraper976:
-    def __init__(self, csvfile='./historicalfishingcount.csv'):
-        self.csvfile = csvfile
+    def __init__(self, dbpath='./data/fishcounts.db'):
+        self.dbpath = dbpath
+        self.db = FishCountsDB(file=dbpath)
 
     
+    def get_id(self, name, table):
+        # conn = self.db.db
+        
+        sqlcols ={ 
+            'fish': ['fish', 'fish'],
+            'ports': ['ports', 'port'],
+            'boats': ['boats', 'boat']
+        }
+
+        if table not in sqlcols.keys():
+            return None
+
+        with self.db.db as conn:
+            cur = conn.cursor()
+            table, namecol = sqlcols[table]
+            selectsql = f'SELECT id from {table} WHERE {namecol} = ?'
+            res = cur.execute(selectsql, (name, ))
+
+            resid = res.fetchone()
+
+            # adds to table if it doesn't exist
+            if resid == None:
+                insertsql = f'INSERT INTO {table}({namecol}) VALUES(?)'
+                res = cur.execute(insertsql, (name, ))
+                resid = cur.lastrowid
+                conn.commit()
+
+                return resid
+            
+            else:
+                return resid[0]
+
+
+
     def save_data(self, date, data):
         '''
         Writes data to sqlite db.
@@ -22,23 +57,30 @@ class Scraper976:
         :param data: data to save. format: (date (anglers, {fish: count}))
         '''
         print('Saving data for ', date)
-        db = FishCountsDB()
-        conn = db.db
-        cur = conn.cursor()
-    
-        for port, boats in data.items():
-            for boat, trips in boats.items():
-                for t in trips:
-                    tripsql = 'INSERT INTO trips(date, anglers, boat, port, days) VALUES(?, ?, ?, ?, ?)'
-                    cur.execute(tripsql, (date, t['anglers'], boat, port, t['days']))
-                    tripid = cur.lastrowid
+        # db = FishCountsDB(self.dbpath)
+        # db = self.db
+        # conn = db.db
 
-                    counts = t['counts']
-                    for fish, count in counts.items():
-                        countsql = 'INSERT INTO counts(trip_id, fish, count) VALUES(?, ?, ?)'
-                        cur.execute(countsql, (tripid, fish, count))
+        with self.db.db as conn:
+            cur = conn.cursor()
+            for port, boats in data.items():
+                for boat, trips in boats.items():
+                    for t in trips:
 
-        conn.commit()
+                        boatid = self.get_id(boat, 'boats')
+                        portid = self.get_id(port, 'ports')
+
+                        tripsql = 'INSERT INTO trips(date, anglers, boat, port, days) VALUES(?, ?, ?, ?, ?)'
+                        cur.execute(tripsql, (date, t['anglers'], boatid, portid, t['days']))
+                        tripid = cur.lastrowid
+
+                        counts = t['counts']
+                        for fish, count in counts.items():
+                            fishid = self.get_id(fish, 'fish')
+                            countsql = 'INSERT INTO counts(trip_id, fish, count) VALUES(?, ?, ?)'
+                            cur.execute(countsql, (tripid, fishid, count))
+
+            conn.commit()
 
             
     
@@ -59,7 +101,8 @@ class Scraper976:
 
         data = requests.get(url)
         totals = self.parse_html(date, data.text)
-        return datetime.datetime(month=month, day=day, year=year), totals
+    
+        return datetime.date(month=month, day=day, year=year), totals
 
 
     def parse_port(self, counttext:BeautifulSoup) -> tuple:
@@ -212,7 +255,7 @@ class Scraper976:
         
 
 def scrape_date_range(start:datetime.datetime, end:datetime.datetime):
-    scraper = Scraper976()
+    scraper = Scraper976(dbpath='./data/newfishingdb.db')
     while start <= end:
         date, data = scraper.get_day_totals(start.month, start.day, start.year)
         scraper.save_data(date, data)
@@ -222,15 +265,6 @@ def scrape_date_range(start:datetime.datetime, end:datetime.datetime):
 
 
 if __name__ == '__main__':
-    start = datetime.datetime(month=12, day=22, year=2024)
+    start = datetime.datetime(month=1, day=1, year=2024)
     end = datetime.datetime.today() - datetime.timedelta(days=1)
-    scrape_date_range(start, end)
-
-    # scraper = Scraper976()
-    # m, d, y = 12, 22, 2024
-    # date, data = scraper.get_day_totals(m, d, y)
-    # print(data)
-    # date = datetime.date(day=d, month=m, year=y)
-
-
-    # scraper.save_data(date, data)
+    # scrape_date_range(start, end)

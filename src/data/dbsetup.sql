@@ -1,20 +1,42 @@
 DROP TABLE trips;
 DROP TABLE counts;
+DROP TABLE fish;
+DROP TABLE boats;
+DROP TABLE ports;
+
+CREATE TABLE IF NOT EXISTS fish (
+    id INTEGER PRIMARY KEY,
+    fish TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS boats (
+    id INTEGER PRIMARY KEY,
+    boat TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS ports (
+    id INTEGER PRIMARY KEY,
+    port TEXT NOT NULL
+);
 
 CREATE TABLE IF NOT EXISTS trips (
     id INTEGER PRIMARY KEY,
     date TEXT NOT NULL,
     anglers INTEGER NOT NULL,
-    boat TEXT NOT NULL,
-    port TEXT NOT NULL,
-    days FLOAT NOT NULL
+    boat INTEGER NOT NULL,
+    port INTEGER NOT NULL,
+    days FLOAT NOT NULL,
+
+    FOREIGN KEY (boat) REFERENCES boats(id),
+    FOREIGN KEY (port) REFERENCES ports(id)
 );
 
 CREATE TABLE IF NOT EXISTS counts (
     id INTEGER PRIMARY KEY,
     trip_id INTEGER NOT NULL,
-    fish TEXT NOT NULL,
+    fish INTEGER NOT NULL,
     count INTEGER NOT NULL,
 
-    FOREIGN KEY (trip_id) REFERENCES trips(id)
+    FOREIGN KEY (trip_id) REFERENCES trips(id),
+    FOREIGN KEY (fish) REFERENCES fish(id)
 );

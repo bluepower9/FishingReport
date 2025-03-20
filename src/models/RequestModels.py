@@ -1,12 +1,14 @@
 from pydantic import BaseModel
 import datetime
+from fastapi import Form
+from typing import Annotated
 
 class DateRangeRequest(BaseModel):
-    start:str
-    end:str = str(datetime.datetime.today())
-    fish:list = []
-    boats:list = []
-    ports:list = []
+    start: datetime.date
+    end: datetime.date = datetime.date.today()
+    fish: list = None
+    boats: list = None
+    ports: list= None
 
 
 class DateRangeFish(DateRangeRequest):

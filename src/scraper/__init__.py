@@ -1,0 +1,1 @@
+from scraper.Scraper976 import Scraper976
