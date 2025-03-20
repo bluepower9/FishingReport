@@ -1,0 +1,6 @@
+beautifulsoup4==4.13.3
+fastapi==0.115.11
+inflect==7.0.0
+pydantic==1.10.2
+requests==2.32.3
+uvicorn==0.34.0
